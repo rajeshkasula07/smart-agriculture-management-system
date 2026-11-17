@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Agriculture Management System</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @keyframes pulse-slow {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.6;
+          transform: scale(1.02);
+        }
+      }
+      .animate-pulse-slow {
+        animation: pulse-slow 3s infinite ease-in-out;
+      }
+      .glass-card {
+        background: rgba(30, 41, 59, 0.7);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+    </style>
+  </head>
+  <body
+    class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-emerald-500 selection:text-white"
+  >
+    <!-- Top Navigation Bar -->
+    <header
+      class="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50"
+    >
+      <div
+        class="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center"
+      >
+        <div class="flex items-center space-x-3">
+          <div
+            class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-xl shadow-lg shadow-emerald-950"
+          >
+            🌱
+          </div>
+          <div>
+            <h1
+              class="font-extrabold tracking-wider text-sm md:text-base bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent"
+            >
+              AGRI-SMART CLOUD
+            </h1>
+            <p class="text-xs text-slate-400 font-mono">Node: ESP32_FIELD_01</p>
+          </div>
+        </div>
+
+        <!-- Live Connection Status Badge -->
+        <div
+          class="flex items-center space-x-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-full text-xs shadow-inner"
+        >
+          <span
+            id="connection-dot"
+            class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping"
+          ></span>
+          <span id="connection-text" class="font-mono text-emerald-400"
+            >SYNCED (2s)</span
+          >
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto px-6 py-8 flex-grow w-full space-y-8">
+      <!-- Navigation Tabs -->
+      <div
+        class="flex space-x-2 border-b border-slate-800 pb-4 overflow-x-auto"
+      >
+        <button
+          onclick="switchTab('dashboard')"
+          id="tab-dashboard"
+          class="px-5 py-2.5 rounded-xl font-bold text-sm transition bg-emerald-600 text-white shadow-lg shadow-emerald-900/30"
+        >
+          📊 Live Dashboard
+        </button>
+        <button
+          onclick="switchTab('analytics')"
+          id="tab-analytics"
+          class="px-5 py-2.5 rounded-xl font-bold text-sm transition bg-slate-900 text-slate-400 hover:text-white border border-slate-800"
+        >
+          📈 Analytics & Reports
+        </button>
+        <button
+          onclick="switchTab('weather')"
+          id="tab-weather"
+          class="px-5 py-2.5 rounded-xl font-bold text-sm transition bg-slate-900 text-slate-400 hover:text-white border border-slate-800"
+        >
+          🌦 Microclimate Weather
+        </button>
+        <button
+          onclick="switchTab('crops')"
+          id="tab-crops"
+          class="px-5 py-2.5 rounded-xl font-bold text-sm transition bg-slate-900 text-slate-400 hover:text-white border border-slate-800"
+        >
+          🌾 Crop Profiles
+        </button>
+      </div>
+
+      <!-- TAB 1: DASHBOARD -->
+      <div id="content-dashboard" class="space-y-8">
+        <!-- Hero Grid: Metrics -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <!-- Temperature -->
+          <div
+            class="glass-card p-6 rounded-2xl relative overflow-hidden group hover:border-amber-500/40 transition"
+          >
+            <div class="flex justify-between items-start mb-4">
+              <span
+                class="text-xs font-semibold tracking-wider text-slate-400 uppercase"
+                >🌡 Temperature</span
+              >
+              <span
+                class="p-2.5 bg-amber-500/10 text-amber-400 rounded-xl text-lg border border-amber-500/20"
+                >🔥</span
+              >
+            </div>
+            <div class="flex items-baseline space-x-2">
+              <span
+                id="temp-val"
+                class="text-4xl font-black tracking-tight text-white"
+                >--</span
+              >
+              <span class="text-lg font-bold text-amber-400">°C</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-3 font-mono">
+              Ambient microclimate
+            </p>
+          </div>
+
+          <!-- Humidity -->
+          <div
+            class="glass-card p-6 rounded-2xl relative overflow-hidden group hover:border-sky-500/40 transition"
+          >
+            <div class="flex justify-between items-start mb-4">
+              <span
+                class="text-xs font-semibold tracking-wider text-slate-400 uppercase"
+                >💧 Air Humidity</span
+              >
+              <span
+                class="p-2.5 bg-sky-500/10 text-sky-400 rounded-xl text-lg border border-sky-500/20"
+                >💨</span
+              >
+            </div>
+            <div class="flex items-baseline space-x-2">
+              <span
+                id="humidity-val"
+                class="text-4xl font-black tracking-tight text-white"
+                >--</span
+              >
+              <span class="text-lg font-bold text-sky-400">%</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-3 font-mono">
+              Relative vapor saturation
+            </p>
+          </div>
+
+          <!-- Soil Moisture -->
+          <div
+            class="glass-card p-6 rounded-2xl relative overflow-hidden group hover:border-emerald-500/40 transition"
+          >
+            <div class="flex justify-between items-start mb-4">
+              <span
+                class="text-xs font-semibold tracking-wider text-slate-400 uppercase"
+                >🌱 Soil Moisture</span
+              >
+              <span
+                class="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl text-lg border border-emerald-500/20"
+                >💧</span
+              >
+            </div>
+            <div class="flex items-baseline space-x-2">
+              <span
+                id="soil-val"
+                class="text-4xl font-black tracking-tight text-white"
+                >--</span
+              >
+              <span class="text-lg font-bold text-emerald-400">%</span>
+            </div>
+            <div
+              class="w-full bg-slate-800 h-2 rounded-full mt-3 overflow-hidden"
+            >
+              <div
+                id="soil-bar"
+                class="bg-emerald-500 h-full transition-all duration-500"
+                style="width: 0%"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Water Level -->
+          <div
+            class="glass-card p-6 rounded-2xl relative overflow-hidden group hover:border-blue-500/40 transition"
+          >
+            <div class="flex justify-between items-start mb-4">
+              <span
+                class="text-xs font-semibold tracking-wider text-slate-400 uppercase"
+                >🚰 Water Reservoir</span
+              >
+              <span
+                class="p-2.5 bg-blue-500/10 text-blue-400 rounded-xl text-lg border border-blue-500/20"
+                >⚡</span
+              >
+            </div>
+            <div class="flex items-baseline space-x-2">
+              <span
+                id="water-val"
+                class="text-4xl font-black tracking-tight text-white"
+                >--</span
+              >
+              <span class="text-lg font-bold text-blue-400">%</span>
+            </div>
+            <div
+              class="w-full bg-slate-800 h-2 rounded-full mt-3 overflow-hidden"
+            >
+              <div
+                id="water-bar"
+                class="bg-blue-500 h-full transition-all duration-500"
+                style="width: 0%"
+              ></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Control & Alerts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Irrigation Control Unit (2 cols) -->
+          <div
+            class="glass-card p-8 rounded-2xl lg:col-span-2 flex flex-col justify-between space-y-6"
+          >
+            <div class="flex justify-between items-center">
+              <div>
+                <p
+                  class="text-xs font-mono text-emerald-400 uppercase tracking-widest"
+                >
+                  Actuator Hub
+                </p>
+                <h2 class="text-2xl font-black mt-1 text-white">
+                  Smart Irrigation System
+                </h2>
+              </div>
+              <button
+                onclick="toggleMode()"
+                id="mode-badge"
+                class="px-4 py-1.5 rounded-full text-xs font-bold font-mono tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
+              >
+                AUTOMATIC MODE
+              </button>
+            </div>
+
+            <div
+              class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-900/60 p-5 rounded-xl border border-slate-800/80"
+            >
+              <div>
+                <span class="text-xs text-slate-400 block font-mono uppercase"
+                  >Pump Status</span
+                >
+                <span id="pump-status" class="text-2xl font-black tracking-wide"
+                  >--</span
+                >
+              </div>
+              <div>
+                <span class="text-xs text-slate-400 block font-mono uppercase"
+                  >Operation Mode</span
+                >
+                <span
+                  id="mode-display"
+                  class="text-2xl font-black tracking-wide text-cyan-400"
+                  >--</span
+                >
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <button
+                onclick="controlValve('ON')"
+                class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-emerald-950 transition transform active:scale-95 text-center"
+              >
+                Force Pump ON
+              </button>
+              <button
+                onclick="controlValve('OFF')"
+                class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3.5 px-6 rounded-xl border border-slate-700 transition transform active:scale-95 text-center"
+              >
+                Force Pump OFF
+              </button>
+            </div>
+          </div>
+
+          <!-- Live System Logs / Alerts (1 col) -->
+          <div class="glass-card p-6 rounded-2xl flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <h3
+                  class="text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2"
+                >
+                  🔔 Live Alerts
+                </h3>
+                <span class="text-xs font-mono text-slate-500">Real-time</span>
+              </div>
+              <div
+                id="alerts-container"
+                class="space-y-2.5 font-mono text-xs max-h-48 overflow-y-auto pr-1"
+              >
+                <p class="text-slate-500 italic">
+                  Listening for telemetry events...
+                </p>
+              </div>
+            </div>
+            <div class="pt-4 border-t border-slate-800/80 text-right">
+              <span id="last-updated" class="text-xs font-mono text-slate-500"
+                >Last sync: --</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: ANALYTICS -->
+      <div id="content-analytics" class="hidden space-y-6">
+        <div class="glass-card p-8 rounded-2xl">
+          <h2 class="text-xl font-bold mb-4">
+            📊 System Telemetry & Efficiency Reports
+          </h2>
+          <p class="text-sm text-slate-400 mb-6">
+            Historical aggregation of soil hydration efficiency and water
+            savings.
+          </p>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div
+              class="bg-slate-900/60 p-6 rounded-xl border border-slate-800 text-center"
+            >
+              <p class="text-3xl font-black text-emerald-400 mb-1">42.5%</p>
+              <p class="text-xs text-slate-400 font-mono">
+                Average Water Conservation
+              </p>
+            </div>
+            <div
+              class="bg-slate-900/60 p-6 rounded-xl border border-slate-800 text-center"
+            >
+              <p class="text-3xl font-black text-cyan-400 mb-1">99.2%</p>
+              <p class="text-xs text-slate-400 font-mono">IoT Node Uptime</p>
+            </div>
+            <div
+              class="bg-slate-900/60 p-6 rounded-xl border border-slate-800 text-center"
+            >
+              <p class="text-3xl font-black text-amber-400 mb-1">1,420 L</p>
+              <p class="text-xs text-slate-400 font-mono">
+                Total Water Saved This Month
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: WEATHER -->
+      <div id="content-weather" class="hidden space-y-6">
+        <div class="glass-card p-8 rounded-2xl">
+          <h2 class="text-xl font-bold mb-4">
+            🌦 Regional Microclimate & Forecast
+          </h2>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div
+              class="bg-slate-900/60 p-5 rounded-xl border border-slate-800 text-center"
+            >
+              <p class="text-xs text-slate-400 font-mono mb-2">TODAY</p>
+              <p class="text-3xl mb-2">☀️</p>
+              <p class="font-bold text-lg">31°C / Sunny</p>
+              <p class="text-xs text-slate-500 mt-1">
+                Evaporation rate: Moderate
+              </p>
+            </div>
+            <div
+              class="bg-slate-900/60 p-5 rounded-xl border border-slate-800 text-center"
+            >
+              <p class="text-xs text-slate-400 font-mono mb-2">TOMORROW</p>
+              <p class="text-3xl mb-2">⛅</p>
+              <p class="font-bold text-lg">29°C / Partly Cloudy</p>
+              <p class="text-xs text-slate-500 mt-1">
+                Natural precipitation: 10%
+              </p>
+            </div>
+            <div
+              class="bg-slate-900/60 p-5 rounded-xl border border-slate-800 text-center"
+            >
+              <p class="text-xs text-slate-400 font-mono mb-2">WEDNESDAY</p>
+              <p class="text-3xl mb-2">🌧️</p>
+              <p class="font-bold text-lg">26°C / Light Rain</p>
+              <p class="text-xs text-slate-500 mt-1">
+                Irrigation pause recommended
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: CROPS -->
+      <div id="content-crops" class="hidden space-y-6">
+        <div class="glass-card p-8 rounded-2xl">
+          <h2 class="text-xl font-bold mb-4">🌾 Active Crop Management</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div
+              class="bg-slate-900/60 p-6 rounded-xl border border-slate-800 flex items-center space-x-4"
+            >
+              <div class="text-4xl">🌾</div>
+              <div>
+                <h3 class="font-bold text-lg text-emerald-400">
+                  Paddy Rice (Sector A)
+                </h3>
+                <p class="text-xs text-slate-400 mt-1">
+                  Optimal moisture: 40% - 60%
+                </p>
+                <span
+                  class="inline-block mt-3 px-2.5 py-1 rounded bg-emerald-500/10 text-emerald-400 text-xs font-mono border border-emerald-500/20"
+                  >Growth Stage: Vegetative</span
+                >
+              </div>
+            </div>
+            <div
+              class="bg-slate-900/60 p-6 rounded-xl border border-slate-800 flex items-center space-x-4"
+            >
+              <div class="text-4xl">🌿</div>
+              <div>
+                <h3 class="font-bold text-lg text-amber-400">
+                  Wheat (Sector B)
+                </h3>
+                <p class="text-xs text-slate-400 mt-1">
+                  Optimal moisture: 30% - 45%
+                </p>
+                <span
+                  class="inline-block mt-3 px-2.5 py-1 rounded bg-amber-500/10 text-amber-400 text-xs font-mono border border-amber-500/20"
+                  >Growth Stage: Flowering</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer
+      class="border-t border-slate-800 bg-slate-900/30 text-center py-4 text-xs text-slate-500 font-mono"
+    >
+      Smart Agriculture Management System &bull; Built for Academic Submission &
+      Viva Evaluation
+    </footer>
+
+    <!-- Script to handle Interactivity & Live Updates -->
+    <script>
+      const API_URL = "http://localhost:5000/api/telemetry";
+
+      function switchTab(tabName) {
+        ["dashboard", "analytics", "weather", "crops"].forEach((t) => {
+          document.getElementById(`content-${t}`).classList.add("hidden");
+          document.getElementById(`tab-${t}`).className =
+            "px-5 py-2.5 rounded-xl font-bold text-sm transition bg-slate-900 text-slate-400 hover:text-white border border-slate-800";
+        });
+        document
+          .getElementById(`content-${tabName}`)
+          .classList.remove("hidden");
+        document.getElementById(`tab-${tabName}`).className =
+          "px-5 py-2.5 rounded-xl font-bold text-sm transition bg-emerald-600 text-white shadow-lg shadow-emerald-900/30";
+      }
+
+      async function fetchData() {
+        try {
+          const response = await fetch(API_URL);
+          const data = await response.json();
+
+          document.getElementById("temp-val").innerText =
+            data.temperature.toFixed(1);
+          document.getElementById("humidity-val").innerText =
+            data.humidity.toFixed(1);
+
+          const soilVal = data.soil_moisture.toFixed(1);
+          document.getElementById("soil-val").innerText = soilVal + "%";
+          document.getElementById("soil-bar").style.width = soilVal + "%";
+
+          const waterVal = data.water_level.toFixed(1);
+          document.getElementById("water-val").innerText = waterVal + "%";
+          document.getElementById("water-bar").style.width = waterVal + "%";
+
+          const pumpEl = document.getElementById("pump-status");
+          pumpEl.innerText = data.irrigation_status;
+          pumpEl.className =
+            data.irrigation_status === "ON"
+              ? "text-2xl font-black tracking-wide text-emerald-400 animate-pulse"
+              : "text-2xl font-black tracking-wide text-slate-400";
+
+          document.getElementById("mode-display").innerText = data.mode;
+          document.getElementById("last-updated").innerText =
+            "Last sync: " + new Date().toLocaleTimeString();
+
+          // Render Alerts
+          const alertsContainer = document.getElementById("alerts-container");
+          if (data.alerts && data.alerts.length > 0) {
+            alertsContainer.innerHTML = data.alerts
+              .map(
+                (alert) =>
+                  `<p class="text-slate-300 bg-slate-900/80 p-2 rounded border border-slate-800">• ${alert}</p>`,
+              )
+              .join("");
+          }
+        } catch (error) {
+          console.error("Connection error:", error);
+          document.getElementById("connection-text").innerText = "DISCONNECTED";
+          document.getElementById("connection-text").className =
+            "font-mono text-rose-500";
+          document.getElementById("connection-dot").className =
+            "w-2.5 h-2.5 bg-rose-500 rounded-full";
+        }
+      }
+
+      async function controlValve(action) {
+        await fetch("http://localhost:5000/api/control-valve", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: action }),
+        });
+        fetchData();
+      }
+
+      async function toggleMode() {
+        await fetch("http://localhost:5000/api/set-mode", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mode: "AUTOMATIC" }),
+        });
+        fetchData();
+      }
+
+      fetchData();
+      setInterval(fetchData, 2000);
+    </script>
+  </body>
+</html>
+```eof
